@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sushi POS — Cajera</title>
+  <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+  <header class="top">
+    <img src="./logo.png" alt="Sushi To Go" class="logo" />
+    <h1>Sushi POS</h1>
+    <button id="testTicket" class="pill" style="margin-left:auto">Ticket de prueba</button>
+    <input id="mesa" class="inp" placeholder="Mesa / Para llevar"/>
+  </header>
+
+  <main class="wrap">
+    <div id="cats" class="cats"></div>
+    <div id="grid" class="grid"></div>
+
+    <aside class="aside">
+      <h3>Carrito</h3>
+      <div id="cart" class="cart"></div>
+      <textarea id="notas" class="inp" rows="3" placeholder="Notas (sin cebolla, etc.)"></textarea>
+      <button id="enviar" class="cta">Enviar a cocina</button>
+    </aside>
+  </main>
+
+  <script type="module">
+    import { initCajera } from './src/js/ui.js';
+    import './src/js/ticket.js';
+    initCajera();
+  </script>
+</body>
+</html>

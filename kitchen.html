@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sushi POS — Kitchen</title>
+  <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body class="kitchen">
+  <header class="top">
+    <img src="./logo.png" alt="Sushi To Go" class="logo" />
+    <h1>Kitchen</h1>
+    <span class="muted">Doble-tap para servir</span>
+  </header>
+  <main class="wrap">
+    <div id="k-wrap" class="k-grid"></div>
+  </main>
+
+  <script type="module">
+    import { initKitchen } from './src/js/kitchen.js';
+    initKitchen();
+  </script>
+</body>
+</html>
