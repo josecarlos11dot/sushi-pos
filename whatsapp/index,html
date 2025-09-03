@@ -1,0 +1,182 @@
+import express from "express";
+import axios from "axios";
+
+const app = express();
+app.use(express.json());
+
+// 👇 RELLENA ESTO:
+const VERIFY_TOKEN   = "sushibot_verify_123";      // inventa una palabra segura
+const WHATS_TOKEN    = "PEGAAQUITU_TOKEN_EAA...";  // tu token de Meta
+const PHONE_NUMBER_ID = "827950083725024";         // tu phone_number_id
+
+// 1) Verificación del webhook (GET)
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    return res.status(200).send(challenge);
+  }
+  return res.sendStatus(403);
+});
+
+// 2) Recepción de mensajes (POST)
+app.post("/webhook", async (req, res) => {
+  try {
+    const entry = req.body.entry?.[0];
+    const change = entry?.changes?.[0];
+    const msg = change?.value?.messages?.[0];
+    const from = msg?.from; // wa_id del cliente (+52... sin +)
+    if (!msg || !from) return res.sendStatus(200);
+
+    const buttonId = msg?.interactive?.button_reply?.id;
+    const listId   = msg?.interactive?.list_reply?.id;
+    const text     = (msg?.text?.body || "").toLowerCase();
+
+    // Escriben "hola" -> mandamos botones principales
+    if (text.includes("hola")) {
+      await sendButtons(from, "🍣 ¡Bienvenido a *Sushi To Go*! ¿Qué te gustaría ver?");
+      return res.sendStatus(200);
+    }
+
+    if (buttonId === "cat_rollos")     { await sendRollosList(from);   return res.sendStatus(200); }
+    if (buttonId === "cat_arroz")      { await sendArrozList(from);    return res.sendStatus(200); }
+    if (buttonId === "cat_brochetas")  { await sendBrochetasList(from);return res.sendStatus(200); }
+
+    if (listId) { // eligió algo de una lista
+      await sendConfirm(from, listId.replaceAll("_", " "));
+      return res.sendStatus(200);
+    }
+
+    return res.sendStatus(200);
+  } catch (e) {
+    console.error(e?.response?.data || e.message);
+    return res.sendStatus(200);
+  }
+});
+
+// ===== Helpers =====
+async function callWhats(body) {
+  const url = `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`;
+  await axios.post(url, body, {
+    headers: {
+      Authorization: `Bearer ${WHATS_TOKEN}`,
+      "Content-Type": "application/json"
+    }
+  });
+}
+
+async function sendButtons(to, text) {
+  return callWhats({
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "cat_rollos",    title: "Rollos" } },
+          { type: "reply", reply: { id: "cat_arroz",     title: "Arroz" } },
+          { type: "reply", reply: { id: "cat_brochetas", title: "Brochetas" } }
+        ]
+      }
+    }
+  });
+}
+
+async function sendRollosList(to) {
+  return callWhats({
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      header: { type: "text", text: "🍣 Rollos" },
+      body:   { text: "Elige tu rollo:" },
+      action: {
+        button: "Ver rollos",
+        sections: [
+          { title: "California", rows: [
+            { id: "roll_california_vegetariano_94", title: "Vegetariano", description: "$94" },
+            { id: "roll_california_camaron_100",    title: "Camarón",     description: "$100" },
+            { id: "roll_california_salmon_102",     title: "Salmón",      description: "$102" }
+          ]},
+          { title: "Philadelphia", rows: [
+            { id: "roll_phila_vegetariano_98", title: "Vegetariano", description: "$98" },
+            { id: "roll_phila_camaron_104",    title: "Camarón",     description: "$104" },
+            { id: "roll_phila_salmon_106",     title: "Salmón",      description: "$106" }
+          ]}
+        ]
+      }
+    }
+  });
+}
+
+async function sendArrozList(to) {
+  return callWhats({
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      header: { type: "text", text: "🍚 Arroces" },
+      body:   { type: "text", text: "Elige tu opción de arroz:" },
+      action: {
+        button: "Ver arroces",
+        sections: [
+          { title: "Al vapor", rows: [
+            { id: "gohan_simple_65",   title: "Gohan simple",       description: "$65" },
+            { id: "gohan_furikake_75", title: "Gohan furikake ebi", description: "$75" }
+          ]},
+          { title: "Frito", rows: [
+            { id: "yakimeshi_82",         title: "Yakimeshi",          description: "$82" },
+            { id: "yakimeshi_especial_92",title: "Yakimeshi especial", description: "$92" }
+          ]}
+        ]
+      }
+    }
+  });
+}
+
+async function sendBrochetasList(to) {
+  return callWhats({
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      header: { type: "text", text: "🍢 Brochetas" },
+      body:   { text: "Elige tu brocheta:" },
+      action: {
+        button: "Ver brochetas",
+        sections: [
+          { title: "Brochetas", rows: [
+            { id: "kushi_queso_84", title: "Kushiage de queso (3 pzs)", description: "$84" },
+            { id: "kushi_ebi_96",   title: "Kushiage ebi (3 pzs)",      description: "$96" }
+          ]}
+        ]
+      }
+    }
+  });
+}
+
+async function sendConfirm(to, lineItem) {
+  return callWhats({
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: `🧾 ${lineItem}\nTotal estimado: $100\n\n¿Confirmas tu pedido?` },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "confirmar_pedido", title: "Confirmar ✅" } },
+          { type: "reply", reply: { id: "cancelar_pedido",  title: "Cancelar" } }
+        ]
+      }
+    }
+  });
+}
+
+app.listen(3000, () => console.log("✅ Sushi webhook escuchando en http://localhost:3000"));
