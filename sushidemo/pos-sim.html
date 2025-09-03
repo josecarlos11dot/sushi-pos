@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sushi To Go — POS Simulado</title>
+<style>
+  :root { --bg:#0b1220; --panel:#0f1629; --ink:#e8ecf6; --muted:#9aa5b1; --line:#202b44; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 system-ui,Segoe UI,Roboto,Inter,Arial; }
+  header { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); background:var(--panel); position:sticky; top:0; z-index:10;}
+  header img { width:36px; height:36px; border-radius:6px; object-fit:cover; }
+  .wrap { max-width:1100px; margin:0 auto; padding:16px; display:grid; grid-template-columns: 320px 1fr; gap:16px; }
+  .pane { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; }
+  h2 { margin:6px 0 12px; font-size:16px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .btn { padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#121a33; color:var(--ink); cursor:pointer; }
+  .btn:hover { filter:brightness(1.1); }
+  .order { border:1px dashed var(--line); border-radius:10px; padding:10px; }
+  .order .ttl { font-weight:700; }
+  .status { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; margin-left:6px; }
+  .s-pend { background:#1f2937; color:#cbd5e1; }
+  .s-prep { background:#1e293b; color:#93c5fd; }
+  .s-listo { background:#172554; color:#a5b4fc; }
+  .s-entregado { background:#052e16; color:#86efac; }
+  .actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .tags { display:flex; flex-wrap:wrap; gap:6px; }
+  .tag { background:#0b1220; border:1px solid var(--line); padding:6px 8px; border-radius:999px; font-size:12px; color:#c7d2fe; }
+  .sub { color:var(--muted); font-size:12px; }
+  .mini { font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+  <header>
+    <img src="/img/logo.jpg" alt="logo" />
+    <div>
+      <div style="font-weight:700">POS — Sushi To Go</div>
+      <div class="mini">Demo sin APIs: envía estados al canal para que el Bot los muestre</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="pane">
+      <h2>Atajos de pedido</h2>
+      <div class="grid">
+        <button class="btn quick" data-item="Paquete 1">Paquete 1</button>
+        <button class="btn quick" data-item="Paquete 2">Paquete 2</button>
+        <button class="btn quick" data-item="Paquete 3">Paquete 3</button>
+        <button class="btn quick" data-item="Paquete 4">Paquete 4</button>
+        <button class="btn quick" data-item="Yakimeshi">Yakimeshi</button>
+        <button class="btn quick" data-item="Gohan">Gohan</button>
+      </div>
+      <p class="mini">Tip: abre también la simulación de WhatsApp en otra pestaña para ver la interacción.</p>
+      <hr style="border-color:#202b44; opacity:.4">
+      <h2>Material de referencia</h2>
+      <div class="grid">
+        <a class="btn" href="/img/menu.jpg" target="_blank">Ver menú</a>
+        <a class="btn" href="/img/packs.jpg" target="_blank">Ver paquetes</a>
+      </div>
+    </section>
+
+    <section class="pane">
+      <h2>Órdenes</h2>
+      <div id="list"></div>
+    </section>
+  </main>
+
+<script>
+  const channel = new BroadcastChannel('sushi-demo');
+  let seq = 1;
+  const list = document.getElementById('list');
+
+  function mkOrder(desc) {
+    const id = 'ORD-' + String(seq++).padStart(3,'0');
+    const el = document.createElement('div');
+    el.className = 'order';
+    el.dataset.status = 'pendiente';
+    el.innerHTML = `
+      <div class="ttl">{desc} <span class="status s-pend">Pendiente</span></div>
+      <div class="sub">#{id} · Recibido: <span class="ts"></span></div>
+      <div class="tags"></div>
+      <div class="actions">
+        <button class="btn act" data-act="preparacion">En preparación</button>
+        <button class="btn act" data-act="listo">Listo para entregar</button>
+        <button class="btn act" data-act="entregado">Entregado</button>
+        <button class="btn act" data-act="cancelado" style="border-color:#3b1d1d;">Cancelar</button>
+      </div>`;
+    el.querySelector('.ts').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    list.prepend(el);
+    channel.postMessage({type:'pos_update', text:`🧾 Pedido creado: ${desc}`});
+    return el;
+  }
+
+  document.querySelectorAll('.quick').forEach(b => b.addEventListener('click', () => {
+    mkOrder(`Cliente: Juan — ${b.dataset.item}`);
+  }));
+
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('.act'); if (!btn) return;
+    const card = e.target.closest('.order');
+    const statusEl = card.querySelector('.status');
+    const tags = card.querySelector('.tags');
+
+    function setStatus(cls, label) { statusEl.className = 'status ' + cls; statusEl.textContent = label; }
+
+    const textMap = {
+      'preparacion': () => (setStatus('s-prep','En preparación'), '🍣 Tu pedido está en preparación.'),
+      'listo': () => (setStatus('s-listo','Listo'), '📦 Tu pedido está listo para entregar.'),
+      'entregado': () => (setStatus('s-entregado','Entregado'), '✅ Pedido entregado. ¡Gracias por tu compra!'),
+      'cancelado': () => (setStatus('s-pend','Cancelado'), '⚠️ Tu pedido fue cancelado. Si fue un error, avísanos.')
+    };
+    const act = btn.dataset.act;
+    const msg = (textMap[act] && textMap[act]()) || null;
+    if (msg) {
+      const tag=document.createElement('span'); tag.className='tag'; tag.textContent=btn.textContent; tags.appendChild(tag);
+      channel.postMessage({type:'pos_update', text: msg});
+    }
+  });
+
+  channel.onmessage = (e) => { const m=e.data||{}; if (m.type==='client_msg') mkOrder('Cliente (WhatsApp): '+m.text); };
+</script>
+</body>
+</html>

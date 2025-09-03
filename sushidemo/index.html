@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sushi To Go — Demo</title>
+<style>
+  :root{--bg:#0b1220;--panel:#0f1629;--ink:#e8ecf6;--muted:#9aa5b1;--line:#202b44;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,Segoe UI,Roboto,Inter,Arial}
+  .wrap{max-width:980px;margin:0 auto;padding:24px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  header img{width:48px;height:48px;border-radius:8px;object-fit:cover}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  a.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;text-decoration:none;color:inherit}
+  .mini{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/img/logo.jpg" alt="logo">
+      <div>
+        <div style="font-weight:700">Demo — Sushi To Go</div>
+        <div class="mini">Abre ambas páginas en pestañas separadas para ver la interacción en tiempo real.</div>
+      </div>
+    </header>
+    <div class="grid">
+      <a class="card" href="./whatsapp-sim.html" target="_blank">
+        <h2>1) Bot de WhatsApp simulado</h2>
+        <p class="mini">Interfaz tipo WhatsApp con mensajes predefinidos y “escribiendo…”.</p>
+      </a>
+      <a class="card" href="./pos-sim.html" target="_blank">
+        <h2>2) POS simulado</h2>
+        <p class="mini">Crea pedidos y cambia estados; envía notificaciones al chat.</p>
+      </a>
+    </div>
+    <p class="mini" style="margin-top:18px">Material de referencia: <a href="/img/menu.jpg" target="_blank">Menú</a> | <a href="/img/packs.jpg" target="_blank">Paquetes</a></p>
+  </div>
+</body>
+</html>

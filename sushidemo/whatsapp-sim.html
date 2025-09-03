@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sushi To Go — Simulación WhatsApp</title>
+<style>
+  :root {
+    --bg: #0b141a; --panel: #111b21; --ink: #e9edef;
+    --bubble-me: #005c4b; --bubble-other: #202c33; --muted: #8696a0;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--panel); color:var(--ink);
+    font: 15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; }
+  .header { display:flex; align-items:center; gap:10px; padding:12px 16px;
+    background:#202c33; position:sticky; top:0; z-index:10; border-bottom:1px solid #1f2c33; }
+  .header img { width:36px; height:36px; border-radius:999px; object-fit:cover; }
+  .header .name { font-weight:600; }
+  .header .status { font-size:12px; color:var(--muted); }
+  .wrap { max-width:900px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column; }
+  .chat { flex:1; padding:16px 12px 100px; }
+  .row { display:flex; margin:6px 0; }
+  .bubble { max-width:78%; padding:8px 10px; border-radius:12px; position:relative; }
+  .other .bubble { background:var(--bubble-other); border-top-left-radius:4px; }
+  .me .bubble { margin-left:auto; background:var(--bubble-me); border-top-right-radius:4px; }
+  .time { display:block; margin-top:4px; font-size:11px; color:#cbd5db; opacity:.9; }
+  .typing { display:inline-flex; gap:4px; padding:6px 8px; border-radius:12px; background:var(--bubble-other); }
+  .dot { width:6px; height:6px; border-radius:50%; background:#cbd5db; opacity:.6; animation:blink 1.2s infinite ease-in-out; }
+  .dot:nth-child(2) { animation-delay:.15s; } .dot:nth-child(3) { animation-delay:.3s; }
+  @keyframes blink { 0%,80%,100% {transform:translateY(0);opacity:.4} 40% {transform:translateY(-2px);opacity:1} }
+  .composer { position:fixed; left:0; right:0; bottom:0; background:#202c33; padding:10px; border-top:1px solid #1f2c33; }
+  .composer .chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .chip { background:#2a3942; color:#cfe5d0; padding:8px 10px; border-radius:999px; font-size:13px; cursor:pointer; border:1px solid #32444c; }
+  .hint { color:var(--muted); font-size:12px; margin:6px 2px 0; }
+  .sidecards { display:flex; gap:10px; overflow:auto; padding:8px 2px 0; }
+  .card { min-width:220px; background:#0b141a; border:1px solid #1f2c33; border-radius:10px; padding:8px; }
+  .card img { width:100%; border-radius:8px; }
+  .card .ttl { font-weight:700; margin:6px 0 2px; }
+  .tag { font-size:11px; color:#a6b3ba; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <img src="/img/logo.jpg" alt="Sushi To Go" />
+    <div>
+      <div class="name">SushiBot 🍣</div>
+      <div class="status" id="status">en línea</div>
+    </div>
+  </div>
+
+  <div class="chat" id="chat"></div>
+
+  <div class="composer">
+    <div class="sidecards">
+      <div class="card">
+        <img src="/img/packs.jpg" alt="Paquetes" />
+        <div class="ttl">Paquetes populares</div>
+        <div class="tag">Toca un chip para ordenar</div>
+      </div>
+      <div class="card">
+        <img src="/img/menu.jpg" alt="Menú" />
+        <div class="ttl">Menú completo</div>
+        <div class="tag">Precios de referencia</div>
+      </div>
+    </div>
+    <div class="chips">
+      <div class="chip" data-msg="Quiero el Paquete 1">Paquete 1</div>
+      <div class="chip" data-msg="Paquete 2, por favor">Paquete 2</div>
+      <div class="chip" data-msg="2x Paquete 3">Paquete 3</div>
+      <div class="chip" data-msg="Paquete 4 y 2 Yakimeshi">Paquete 4</div>
+      <div class="chip" data-msg="¿Tiempo de entrega?">¿Tiempo?</div>
+    </div>
+    <div class="hint">Simulación: toca los chips para enviar mensajes. Las actualizaciones del POS aparecerán aquí automáticamente.</div>
+  </div>
+</div>
+
+<script>
+  function fmtTime(d=new Date()){return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+  const chat=document.getElementById('chat');
+  function addRow(side,text){
+    const row=document.createElement('div');row.className='row '+side;
+    const b=document.createElement('div');b.className='bubble';
+    b.innerHTML=text+'<span class="time">'+fmtTime()+'</span>';
+    row.appendChild(b);chat.appendChild(row);chat.scrollTop=chat.scrollHeight;
+  }
+  function typing(show=true){
+    let el=document.getElementById('typing');
+    if(show){ if(el) return;
+      const row=document.createElement('div');row.id='typing';row.className='row other';
+      row.innerHTML='<div class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+      chat.appendChild(row);
+    } else if(el) el.remove();
+    chat.scrollTop=chat.scrollHeight;
+  }
+  document.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      addRow('me',chip.dataset.msg);
+      channel.postMessage({type:'client_msg',text:chip.dataset.msg});
+      typing(true);
+      setTimeout(()=>{ typing(false); addRow('other','✅ Pedido recibido. Te aviso cada etapa.'); },800);
+    });
+  });
+  const channel=new BroadcastChannel('sushi-demo');
+  channel.onmessage=(e)=>{const m=e.data||{}; if(m.type==='pos_update') addRow('other',m.text);};
+  addRow('other','¡Hola! Soy SushiBot 🍣 ¿Qué deseas ordenar hoy?');
+</script>
+</body>
+</html>
